@@ -4,6 +4,14 @@ A simplified portfolio extraction of the grid-based inventory architecture devel
 
 The original production system also handles equipment, tools, batteries, clothing, anomalies, quests, crafting, shops, UI and world placement. These game-specific responsibilities are intentionally removed from this repository so the example focuses on the inventory core.
 
+## Overview
+
+![Inventory System](Media/inventory-01.png)
+
+## Demo
+
+[▶️ Watch Inventory Demo](Media/inventory-demo.mp4)
+
 ## Features
 
 * Variable-size inventory items
