@@ -1,27 +1,28 @@
-# Grid-Based Multiplayer Inventory System
+# UE5 Multiplayer Grid Inventory System
 
-A simplified portfolio extraction of the grid-based inventory architecture developed for **DeepAnomaly** in Unreal Engine 5 / C++.
+A simplified portfolio extraction of the grid-based inventory architecture developed for **DeepAnomaly**, a cooperative horror extraction game built with Unreal Engine 5 and C++.
 
-The original game system also handles equipment, tools, batteries, clothing, anomalies, quests, crafting, shops, UI and world placement. Those responsibilities are intentionally removed here so the sample focuses on the reusable inventory core.
+The original production system also handles equipment, tools, batteries, clothing, anomalies, quests, crafting, shops, UI and world placement. These game-specific responsibilities are intentionally removed from this repository so the example focuses on the inventory core.
 
 ## Features
 
-- Variable-size inventory items (`FIntPoint Size`)
-- Rectangular multi-cell collision detection
-- Automatic first-free-position placement
-- Explicit item movement to a target cell
-- Item rotation with fit validation
-- Multiple logical inventory grids
-- Server-authoritative state changes
-- Replicated inventory grids with `OnRep` callbacks
-- Custom `NetSerialize` for inventory data
-- UI-independent `OnInventoryChanged` event
-- Clear separation between inventory state and presentation code
+* Variable-size inventory items
+* Rectangular multi-cell placement
+* Automatic first-free-position detection
+* Explicit item movement
+* Item rotation with fit validation
+* Multiple logical inventory grids
+* Server-authoritative inventory operations
+* Replicated inventory state
+* `OnRep` callbacks
+* Custom `NetSerialize`
+* UI-independent inventory change events
+* Separation between inventory state and presentation
 
 ## Architecture
 
 ```text
-                Client input / UI
+                Client Input / UI
                        |
                        v
               UInventoryComponent
@@ -30,37 +31,41 @@ The original game system also handles equipment, tools, batteries, clothing, ano
              |                   |
              v                   v
         Add / Move /        Rotate / Remove
-        placement logic          logic
+        Placement Logic          Logic
              |                   |
              +---------+---------+
                        |
                        v
-                Server authority
+                Server Authority
                        |
                        v
-             FInventoryGrid state
+              FInventoryGrid State
                        |
                        v
-                  Replication
+                   Replication
                        |
                        v
-                    OnRep
+                     OnRep
                        |
                        v
              OnInventoryChanged
                        |
                        v
-                 UI / presentation
+                UI / Presentation
 ```
 
-## Grid placement
+## Grid Placement
 
-Each item occupies a rectangle of cells. The placement algorithm scans the grid from the top-left corner and accepts the first position that:
+Each inventory item occupies a rectangular area of grid cells.
 
-1. keeps the entire item inside the grid bounds, and
-2. does not overlap another item.
+When automatically adding an item, the placement algorithm scans the grid from the top-left corner and selects the first valid position.
 
-The collision test is implemented with axis-aligned rectangle intersection using the item's grid position and size.
+A position is considered valid when:
+
+1. The entire item remains inside the grid bounds.
+2. The item does not overlap an existing item.
+
+The collision test uses axis-aligned rectangle intersection based on the item's grid position and size.
 
 ### Example
 
@@ -81,13 +86,15 @@ A = 2 x 2 item
 B = 2 x 2 item
 ```
 
-## Rotation
+## Item Rotation
 
-Rotation swaps the item's width and height. Before committing the change, the component performs the same bounds and overlap checks used for normal placement. This prevents an item from being rotated into an invalid or occupied space.
+Rotation swaps the item's width and height.
 
-## Networking
+Before applying the rotation, the new dimensions are validated against the grid bounds and existing items. This prevents an item from being rotated into an invalid or occupied position.
 
-Inventory mutations are server-authoritative:
+## Multiplayer & Replication
+
+Inventory mutations are handled through server-authoritative operations.
 
 ```text
 Client
@@ -96,66 +103,79 @@ Client
   v
 Server
   |
-  | validate request
+  | Validate Request
   v
-Inventory state
+Inventory State
   |
-  | replicated FInventoryGrid
+  | Replication
   v
-Client OnRep
+Client
   |
+  | OnRep
   v
-Presentation update
+Presentation Update
 ```
 
-The sample deliberately keeps UI out of the component. `OnInventoryChanged` provides a lightweight integration point for UMG or another presentation layer.
+The client requests an inventory operation, while the server validates and applies the resulting state change.
 
-## Why `NetSerialize`?
+The replicated inventory grids then update clients through Unreal Engine's property replication system.
 
-`FInventoryItem` and `FInventoryGrid` implement custom `NetSerialize` functions and opt into Unreal's `WithNetSerializer` struct trait. This keeps the replicated state representation explicit instead of relying on the default struct serializer.
+## Custom NetSerialize
 
-## Design decisions
+`FInventoryItem` and `FInventoryGrid` implement custom `NetSerialize` functions and use Unreal Engine's `WithNetSerializer` struct trait.
 
-### Data-oriented runtime state
+This provides explicit control over how the inventory data is serialized for replication.
 
-The runtime item structure contains only information required by the inventory core:
+## Design Decisions
 
-- identity
-- grid size
-- position
-- category
-- rotation state
+### Data-Oriented Runtime State
 
-DeepAnomaly's original structure contains additional references for meshes, widgets, tools, batteries, anomalies, economy and other gameplay systems. Those are intentionally not part of this sample.
+The portfolio version keeps the runtime inventory item focused on the information required by the inventory core:
 
-### No direct UI dependency
+* Item identity
+* Grid size
+* Grid position
+* Item category
+* Rotation state
 
-The original component updates `InventoryUserWidget` directly. In this portfolio extraction the core instead broadcasts `OnInventoryChanged`. The UI can subscribe without creating a dependency from the inventory implementation back to a specific widget class.
+The production DeepAnomaly implementation contains additional references and gameplay-specific data for tools, batteries, clothing, anomalies, economy, world placement and other systems.
 
-### Server-side validation
+These dependencies are intentionally excluded from this repository.
 
-The original game implementation used server RPCs for inventory mutations. This sample keeps that architecture and adds basic parameter validation before applying server-side changes.
+### Separation of State and Presentation
 
-## Source relationship
+The inventory core does not directly depend on a specific UMG widget.
 
-This repository is **not presented as the complete DeepAnomaly inventory implementation**. It is an intentionally simplified extraction of the core architecture used in the game.
+Instead, inventory changes are exposed through an `OnInventoryChanged` event, allowing a UI or another presentation layer to react to state changes without coupling the core implementation to a particular widget class.
 
-The production implementation contains additional game-specific systems and integrations that are outside the scope of this sample.
+### Server-Side Validation
+
+Inventory operations are processed through the server-authoritative architecture used by the multiplayer game.
+
+The portfolio version also performs validation of incoming operation parameters before modifying the inventory state.
+
+## Source Relationship
+
+This repository is **not the complete DeepAnomaly inventory implementation**.
+
+It is an intentionally simplified portfolio extraction of the core architecture developed for the game.
+
+The production implementation contains additional game-specific systems and integrations that are outside the scope of this example.
 
 ## Unreal Engine
 
-Designed for Unreal Engine 5 C++ projects.
+Designed for **Unreal Engine 5 / C++** projects.
 
-The generated API macro is `INVENTORYSYSTEM_API`; when integrating these files into another project, replace it with that project's module API macro.
+The generated API macro is:
 
-## Portfolio talking points
+```cpp
+INVENTORYSYSTEM_API
+```
 
-When discussing this system in an interview, the most relevant topics are:
+When integrating these files into another Unreal Engine module, replace it with the API macro generated for that module.
 
-- How variable-size grid items are represented
-- Why rectangle overlap is enough for cell-based placement
-- Why placement is deterministic (top-left to bottom-right scan)
-- How rotation is validated before modifying state
-- Why inventory mutations are server-authoritative in multiplayer
-- How replicated state triggers presentation updates
-- Why the public sample removes game-specific dependencies from the inventory core
+## License
+
+This repository contains a portfolio-oriented extraction of code developed for DeepAnomaly.
+
+The code is provided for demonstration and educational purposes.
